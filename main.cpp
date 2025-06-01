@@ -1,36 +1,32 @@
 #include "tokenisator.h"
-#include "vocabulary.h"
+#include "vocabulary.cpp"
 
 int main() {
-    string path = "db.txt";
-    ofstream fout(path);
+    sqlite3* db;
+    sqlite3_open("mem.db", &db);
+    unordered_map<string, unordered_map<string, int>> memory;
 
-    if (!fout.is_open()) {
-        cerr << "err opening file" << "\n";
+    if (sqlite3_open("mem.db", &db)) {
+        cerr << "err opening db" << "\n";
         return 1;
     }
-
+    init_db(db);
+    load_mem(db, memory);
     cout << "ur message: ";
     string text;
     getline(cin, text);
     vector<string> tokens = tokenisator(text);
-    train(tokens, memory);
-
-    for (const string& token : tokens) {
-        fout << token << "\n";
-        cout << token << "\n";
-    }
+    train(db, tokens, memory);
 
     for (const auto& pair: memory) {
         cout << "Word: " << pair.first << " -> ";
-    for (const auto& neighbor: pair.second) {
-        cout << neighbor.first << "(" << neighbor.second << ") ";
+        for (const auto& neighbor: pair.second) {
+            cout << neighbor.first << "(" << neighbor.second << ") ";
+        }
+        cout << "\n";
     }
-    cout << "\n";
-}
 
-    fout.close();
+    sqlite3_close(db);
 
-    cout << "file path: " << path << "\n";
     return 0;
 }
