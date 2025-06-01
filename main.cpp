@@ -22,8 +22,8 @@ int main() {
     }
 
     for (const auto& pair: memory) {
-    cout << "Word: " << pair.first << " -> ";
-    for (const auto& neighbor : pair.second) {
+        cout << "Word: " << pair.first << " -> ";
+    for (const auto& neighbor: pair.second) {
         cout << neighbor.first << "(" << neighbor.second << ") ";
     }
     cout << "\n";
