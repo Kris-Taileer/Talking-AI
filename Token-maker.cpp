@@ -2,6 +2,7 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include <sqlite3.h>
 
 using namespace std;
 
@@ -28,4 +29,3 @@ vector <string> tokenisator(const string& str) {
 
     return list;
 }
-
