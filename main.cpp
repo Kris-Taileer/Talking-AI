@@ -1,5 +1,4 @@
-#include "tokenisator.h"
-#include "vocabulary.cpp"
+#include "RESPONSE-ibility.cpp"
 
 int main() {
     sqlite3* db;
@@ -12,18 +11,18 @@ int main() {
     }
     init_db(db);
     load_mem(db, memory);
-    cout << "ur message: ";
     string text;
-    getline(cin, text);
-    vector<string> tokens = tokenisator(text);
-    train(db, tokens, memory);
+    while (true) {
+        cout << "ur message: ";
+        getline(cin, text);
+        if (text == "exit") break;
+        vector<string> tokens = tokenisator(text);
+        train(db, tokens, memory);
 
-    for (const auto& pair: memory) {
-        cout << "Word: " << pair.first << " -> ";
-        for (const auto& neighbor: pair.second) {
-            cout << neighbor.first << "(" << neighbor.second << ") ";
+        if (!tokens.empty()) {
+            string answer = res_gen(db, tokens.back());
+            cout << "?: " << answer << "\n";
         }
-        cout << "\n";
     }
 
     sqlite3_close(db);
