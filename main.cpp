@@ -1,29 +1,30 @@
+#include <iostream>
 #include "tokenisator.h"
 #include "vocabulary.cpp"
 
 int main() {
     sqlite3* db;
-    sqlite3_open("mem.db", &db);
+    sqlite3_open("mem1.db", &db);
     unordered_map<string, unordered_map<string, int>> memory;
 
-    if (sqlite3_open("mem.db", &db)) {
+    if (sqlite3_open("mem1.db", &db)) {
         cerr << "err opening db" << "\n";
         return 1;
     }
     init_db(db);
-    load_mem(db, memory);
-    cout << "ur message: ";
     string text;
-    getline(cin, text);
-    vector<string> tokens = tokenisator(text);
-    train(db, tokens, memory);
+    while (true) {
+        cout << "ur message: ";
+        getline(cin, text);
+        if (text == "exit") break;
+        vector<string> tokens = tokenisator(text);
 
-    for (const auto& pair: memory) {
-        cout << "Word: " << pair.first << " -> ";
-        for (const auto& neighbor: pair.second) {
-            cout << neighbor.first << "(" << neighbor.second << ") ";
+        for (int n = 2; n <= 4; ++n) {
+            train_ngram(db, tokens, n);
         }
-        cout << "\n";
+
+        string answer = generate_response(db, text);
+        cout << "?: " << answer << "\n";
     }
 
     sqlite3_close(db);
