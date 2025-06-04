@@ -5,7 +5,6 @@
 int main() {
     sqlite3* db;
     sqlite3_open("mem1.db", &db);
-    unordered_map<string, unordered_map<string, int>> memory;
 
     if (sqlite3_open("mem1.db", &db)) {
         cerr << "err opening db" << "\n";
