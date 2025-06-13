@@ -13,8 +13,9 @@ void init_db(sqlite3* db) {
         CREATE TABLE vocabulary (
             context TEXT NOT NULL,
             next_word TEXT NOT NULL,
-            weight INTEGER NOT NULL,
+            weight REAL NOT NULL,
             n INTEGER NOT NULL,
+            pos TEXT,
             PRIMARY KEY (context, next_word, n)
         );
 
@@ -34,13 +35,13 @@ void train_ngram(sqlite3* db, const vector<string>& tokens, int n) {
         sqlite3_stmt* tmp;
         const char* sql = "INSERT INTO vocabulary (context, next_word, weight, n) "
                           "VALUES (?, ?, 1, ?) "
-                          "ON CONFLICT(context, next_word, n) DO UPDATE SET weight = weight + 1;";
+                          "ON CONFLICT(context, next_word, n) DO UPDATE SET weight = weight + 0.5;";
 
 
         if (sqlite3_prepare_v2(db, sql, -1, &tmp, nullptr) == SQLITE_OK) {
             sqlite3_bind_text(tmp, 1, context.c_str(), -1, SQLITE_STATIC);
             sqlite3_bind_text(tmp, 2, next_word.c_str(), -1, SQLITE_STATIC);
-            sqlite3_bind_int(tmp, 3, n);
+            sqlite3_bind_double(tmp, 3, n);
             sqlite3_step(tmp);
         }
         sqlite3_finalize(tmp);
@@ -58,7 +59,7 @@ string get_next(sqlite3* db, const string& context, int n) {
 
     if (sqlite3_prepare_v2(db, sql, -1, &tmp, nullptr) == SQLITE_OK) {
         sqlite3_bind_text(tmp, 1, context.c_str(), -1, SQLITE_STATIC);
-        sqlite3_bind_int(tmp, 2, n);
+        sqlite3_bind_double(tmp, 2, n);
         if (sqlite3_step(tmp) == SQLITE_ROW) {
             const char* word = (const char*)sqlite3_column_text(tmp, 0);
             next = word;
@@ -106,3 +107,54 @@ string generate_response(sqlite3* db, const string& text) {
 
     return res;
 }
+
+
+// void insert_token(sqlite3* db, const string& word, const string& neighbor, int weight) {
+//     const char* sql = "INSERT OR REPLACE INTO memory (word, neighbor, weight) VALUES (?, ?, ?);"; //FUCK SQL
+//     sqlite3_stmt* tmp;
+
+//     if (sqlite3_prepare_v2(db, sql, -1, &tmp, nullptr) != SQLITE_OK) {
+//         cerr << "err in request preparing" << sqlite3_errmsg(db) << endl;
+//         return;
+//     }
+
+//     sqlite3_bind_text(tmp, 1, word.c_str(), -1, SQLITE_TRANSIENT);
+//     sqlite3_bind_text(tmp, 2, neighbor.c_str(), -1, SQLITE_TRANSIENT);
+//     sqlite3_bind_double(tmp, 3, weight);
+
+//     if (sqlite3_step(tmp) != SQLITE_DONE) {
+//         cerr << "request achiving err " << sqlite3_errmsg(db) << "\n";
+//     }
+
+//     sqlite3_finalize(tmp);
+// }
+
+// void load_mem(sqlite3* db, unordered_map<string, unordered_map<string, int>>& memory) { //STILL FUCK IT
+//     const char* sql = "SELECT word, neighbor, weight FROM memory;";
+//     sqlite3_stmt* tmp;
+
+//       if (sqlite3_prepare_v2(db, sql, -1, &tmp, nullptr) != SQLITE_OK) {
+//         cerr << "err in preparing SELECT: " << sqlite3_errmsg(db) << "\n";
+//         return;
+//     }
+
+//     while (sqlite3_step(tmp) == SQLITE_ROW) {
+//         string word = reinterpret_cast<const char*>(sqlite3_column_text(tmp, 0));
+//         string neighbor = reinterpret_cast<const char*>(sqlite3_column_text(tmp, 1));
+//         int weight = sqlite3_column_int(tmp, 2);
+
+//         memory[word][neighbor] = weight;
+//     }
+
+//     sqlite3_finalize(tmp);
+// }
+
+// void train(sqlite3* db, vector<string>& tokens, unordered_map<string, unordered_map<string, int>>& memory) { // as expected, at last i should have to rewrite train function for sql db
+//     for (int i = 0; i + 1 < tokens.size(); ++i) {
+//         string w1 = tokens[i];
+//         string w2 = tokens[i + 1];
+//         memory[w1][w2]++;
+//         insert_token(db, w1, w2, memory[w1][w2]);
+
+//     }
+// }
