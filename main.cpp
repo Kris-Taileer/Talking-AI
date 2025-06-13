@@ -1,8 +1,11 @@
 #include <iostream>
 #include "tokenisator.h"
 #include "vocabulary.cpp"
+#include "eng_dictionary.h"
 
 int main() {
+    auto pos_dict = get_dict("english_pos_dict.csv");
+
     sqlite3* db;
     sqlite3_open("mem1.db", &db);
 
@@ -19,7 +22,7 @@ int main() {
         vector<string> tokens = tokenisator(text);
 
         for (int n = 2; n <= 4; ++n) {
-            train_ngram(db, tokens, n);
+            train_ngram(db, tokens, n, pos_dict);
         }
 
         string answer = generate_response(db, text);
