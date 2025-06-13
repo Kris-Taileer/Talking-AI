@@ -1,9 +1,11 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <vector>
 #include <string>
 #include <unordered_map>
 #include <sqlite3.h>
+
 //this is the most complicated shit i have ever done for last 1/2 year....still sql is more like a blackbox for me, god bless internet guides
 
 using namespace std;
@@ -13,9 +15,9 @@ void init_db(sqlite3* db) {
         CREATE TABLE vocabulary (
             context TEXT NOT NULL,
             next_word TEXT NOT NULL,
+            pos TEXT,
             weight REAL NOT NULL,
             n INTEGER NOT NULL,
-            pos TEXT,
             PRIMARY KEY (context, next_word, n)
         );
 
@@ -23,7 +25,7 @@ void init_db(sqlite3* db) {
     sqlite3_exec(db, sql, 0, 0, nullptr);
 }
 
-void train_ngram(sqlite3* db, const vector<string>& tokens, int n) {
+void train_ngram(sqlite3* db, const vector<string>& tokens, int n, const unordered_map<string, string>& pos_dict) {
     for (int i = 0; i + n <= tokens.size(); ++i) {
         string context;
         for (int j = 0; j < n - 1; ++j) {
@@ -31,17 +33,19 @@ void train_ngram(sqlite3* db, const vector<string>& tokens, int n) {
             context += tokens[i + j];
         }
         string next_word = tokens[i + n - 1];
+        string pos = pos_dict.count(next_word) ? pos_dict.at(next_word) : "UNK"; //tern operator if count() == 1 -> do at() and if count() == 0 -> ret UNK
 
         sqlite3_stmt* tmp;
-        const char* sql = "INSERT INTO vocabulary (context, next_word, weight, n) "
-                          "VALUES (?, ?, 1, ?) "
-                          "ON CONFLICT(context, next_word, n) DO UPDATE SET weight = weight + 0.5;";
+        const char* sql = "INSERT INTO vocabulary (context, next_word, pos, weight, n) "
+                          "VALUES (?, ?, ?, 1.0, ?) "
+                          "ON CONFLICT(context, next_word, pos, n) DO UPDATE SET weight = weight + 0.5;";
 
 
         if (sqlite3_prepare_v2(db, sql, -1, &tmp, nullptr) == SQLITE_OK) {
             sqlite3_bind_text(tmp, 1, context.c_str(), -1, SQLITE_STATIC);
             sqlite3_bind_text(tmp, 2, next_word.c_str(), -1, SQLITE_STATIC);
-            sqlite3_bind_double(tmp, 3, n);
+            sqlite3_bind_text(tmp, 3, pos.c_str(), -1, SQLITE_STATIC);
+            sqlite3_bind_double(tmp, 4, n);
             sqlite3_step(tmp);
         }
         sqlite3_finalize(tmp);
@@ -120,7 +124,7 @@ string generate_response(sqlite3* db, const string& text) {
 
 //     sqlite3_bind_text(tmp, 1, word.c_str(), -1, SQLITE_TRANSIENT);
 //     sqlite3_bind_text(tmp, 2, neighbor.c_str(), -1, SQLITE_TRANSIENT);
-//     sqlite3_bind_double(tmp, 3, weight);
+//     sqlite3_bind_double(tmp, 3, weight);  //why double? because
 
 //     if (sqlite3_step(tmp) != SQLITE_DONE) {
 //         cerr << "request achiving err " << sqlite3_errmsg(db) << "\n";
